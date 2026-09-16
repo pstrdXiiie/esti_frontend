@@ -36,6 +36,11 @@ interface ProgramEnrollmentRow {
 
 interface LatestPreEnrollmentRow {
   academic_year: string
+}
+
+interface CurrentSemesterResult {
+  track: string
+  period: string | null
   semester: number
 }
 
@@ -132,17 +137,43 @@ export default function PreEnrollment() {
   const latestYearLevel = programEnrollmentQuery.data?.[0]?.year_level
   const yearLevel = latestYearLevel != null ? String(latestYearLevel) : ""
 
-  // A returning student's most recent Pre-Enrollment term, so School
-  // Year/Semester default to it the moment the student is found — the
-  // registrar can still change either for a different term, this just
-  // removes the need to re-pick the term every time for someone who's
-  // already been through this before.
+  // Semester auto-derives from Administration > System Setup > Semester
+  // (SMS Semester Setup) via the program's own track classification
+  // (Program.semesters — Basic Education/Regular Semester/Tri Semester) —
+  // this is the direct equivalent of the legacy system's showSemester(),
+  // which joined the student's course to the Semester table the same way.
+  // Re-synced whenever the resolved program changes, since a different
+  // program can belong to a different track; the registrar can still edit
+  // the field afterward, same as School Year already allows.
+  const currentSemesterQuery = useQuery({
+    queryKey: ["Semester", "current", program],
+    queryFn: () =>
+      frappe.call<CurrentSemesterResult>("campus_erp.api.registrar.get_current_semester", {
+        program,
+      }),
+    enabled: !!program,
+  })
+
+  const [syncedSemesterForProgram, setSyncedSemesterForProgram] = useState<string | undefined>(undefined)
+  if (program && program !== syncedSemesterForProgram && currentSemesterQuery.isFetched) {
+    setSyncedSemesterForProgram(program)
+    const resolved = currentSemesterQuery.data?.semester
+    setSemester(resolved != null ? String(resolved) : "")
+  }
+
+  // A returning student's most recent Pre-Enrollment term, so School Year
+  // defaults to it the moment the student is found — the registrar can
+  // still change it for a different term, this just removes the need to
+  // re-pick it every time for someone who's already been through this
+  // before. Semester is NOT sourced from here (see currentSemesterQuery
+  // below) — the legacy system never defaulted semester from a student's
+  // own history either, only from the shared School Year Setup screen.
   const latestPreEnrollmentQuery = useQuery({
     queryKey: ["SMS Pre Enrollment", "latest-term", student?.name],
     queryFn: () =>
       frappe.list<LatestPreEnrollmentRow>("SMS Pre Enrollment", {
         filters: [["student", "=", student!.name]],
-        fields: ["academic_year", "semester"],
+        fields: ["academic_year"],
         order_by: "creation desc",
         limit_page_length: 1,
       }),
@@ -154,7 +185,6 @@ export default function PreEnrollment() {
     setSyncedTermForStudent(student.name)
     const latest = latestPreEnrollmentQuery.data?.[0]
     setAcademicYear(latest ? latest.academic_year : "")
-    setSemester(latest ? String(latest.semester) : "")
   }
 
   const academicYearsQuery = useQuery({
@@ -508,6 +538,11 @@ export default function PreEnrollment() {
               value={semester}
               onChange={(e) => setSemester(e.target.value)}
             />
+            {currentSemesterQuery.data?.period && semester === String(currentSemesterQuery.data.semester) && (
+              <span className="text-xs text-muted-foreground">
+                {currentSemesterQuery.data.period}
+              </span>
+            )}
           </div>
 
           <div className="flex gap-5 items-center">

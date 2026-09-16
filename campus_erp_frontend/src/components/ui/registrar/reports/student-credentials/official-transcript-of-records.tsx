@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { frappe, getErrorMessage } from "@/lib/frappe"
 import { transcriptSpec } from "@/lib/forms/registrar"
+import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -154,6 +155,9 @@ export function OfficialTranscriptOfRecords({
 }) {
   const queryClient = useQueryClient()
 
+  // Print-only: the school letterhead, not needed for the form itself.
+  const printHeaderQuery = usePrintHeader(open)
+
   const [student, setStudent] = useState<StudentOption | null>(null)
   const [fields, setFields] = useState(BLANK_FIELDS)
   // Seeds from `initialStudent` exactly once per closed->open transition
@@ -276,6 +280,7 @@ export function OfficialTranscriptOfRecords({
           <title>Official Transcript of Records — ${escapeHtml(studentName)}</title>
           <style>
             body { font-family: system-ui, sans-serif; padding: 2rem; color: #111; }
+            ${LETTERHEAD_STYLE}
             h1 { font-size: 1.25rem; margin-bottom: 0.25rem; text-align: center; }
             h2 { font-size: 0.95rem; margin: 1.5rem 0 0.5rem; border-bottom: 1px solid #999; padding-bottom: 0.25rem; }
             .tor-no { text-align: center; color: #555; font-size: 0.85rem; margin-bottom: 1.5rem; }
@@ -291,6 +296,7 @@ export function OfficialTranscriptOfRecords({
           </style>
         </head>
         <body>
+          ${renderLetterhead(printHeaderQuery.data)}
           <h1>Request for Official Transcript of Records</h1>
           <div class="tor-no">TOR No.: ${escapeHtml(saved.name)}</div>
 

@@ -1,5 +1,4 @@
-import { Badge } from "@/components/ui/badge"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ReportCard } from "@/components/ui/registrar/reports/report-card"
 
 interface ReportSection {
   title: string
@@ -19,17 +18,9 @@ const SECTIONS: ReportSection[] = [
 export default function SpecialReports() {
   return (
     <div className="rounded-2xl border border-border h-full p-7">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
         {SECTIONS.map((s) => (
-          <Card key={s.title} className="h-full">
-            <CardHeader>
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle>{s.title}</CardTitle>
-                <Badge variant="outline">Coming soon</Badge>
-              </div>
-              <CardDescription>Not yet available.</CardDescription>
-            </CardHeader>
-          </Card>
+          <ReportCard key={s.title} title={s.title} description="Not yet available." />
         ))}
       </div>
     </div>

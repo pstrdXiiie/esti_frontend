@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { frappe, getErrorMessage } from "@/lib/frappe"
+import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -32,6 +33,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+
+/** Escapes text before it's interpolated into the print window's
+ * document.write'd HTML — this print call site had no escaping at all
+ * (student_name/course_name/etc. going straight into the HTML string),
+ * unlike every other print output in the app; fixed to match
+ * student-grades.tsx's own copy of this same helper. */
+function escapeHtml(value: unknown): string {
+  const str = value === null || value === undefined || value === "" ? "—" : String(value)
+  return str.replace(/[&<>"']/g, (ch) => {
+    switch (ch) {
+      case "&":
+        return "&amp;"
+      case "<":
+        return "&lt;"
+      case ">":
+        return "&gt;"
+      case '"':
+        return "&quot;"
+      default:
+        return "&#39;"
+    }
+  })
+}
 
 interface AcademicYearRow {
   name: string
@@ -119,6 +143,11 @@ export default function AllGrades() {
   const [program, setProgram] = useState("")
   const [search, setSearch] = useState("")
   const [selectedStudent, setSelectedStudent] = useState<SelectedStudent | null>(null)
+
+  // Print-only: the school letterhead, gated the same way the per-student
+  // print dialog itself is (a selected student, not an `open` prop — this
+  // page has no such prop of its own).
+  const printHeaderQuery = usePrintHeader(!!selectedStudent)
   const [editedGrades, setEditedGrades] = useState<
     Record<string, { prelim: string; midterm: string; final: string; final_rating: string }>
   >({})
@@ -365,12 +394,12 @@ export default function AllGrades() {
       .map(
         (row) => `
           <tr>
-            <td>${row.course_name ?? ""}</td>
-            <td>${row.subject_code ?? "—"}</td>
-            <td>${row.prelim ?? "—"}</td>
-            <td>${row.midterm ?? "—"}</td>
-            <td>${row.final ?? "—"}</td>
-            <td>${row.final_rating ?? "—"}</td>
+            <td>${escapeHtml(row.course_name)}</td>
+            <td>${escapeHtml(row.subject_code)}</td>
+            <td>${escapeHtml(row.prelim)}</td>
+            <td>${escapeHtml(row.midterm)}</td>
+            <td>${escapeHtml(row.final)}</td>
+            <td>${escapeHtml(row.final_rating)}</td>
           </tr>
         `
       )
@@ -380,9 +409,10 @@ export default function AllGrades() {
       <!doctype html>
       <html>
         <head>
-          <title>Grades — ${selectedStudent.student_name}</title>
+          <title>Grades — ${escapeHtml(selectedStudent.student_name)}</title>
           <style>
             body { font-family: system-ui, sans-serif; padding: 2rem; color: #111; }
+            ${LETTERHEAD_STYLE}
             h1 { font-size: 1.25rem; margin-bottom: 1rem; }
             .details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 1.5rem; margin-bottom: 1.5rem; }
             .details div { margin-bottom: 0.75rem; }
@@ -394,14 +424,15 @@ export default function AllGrades() {
           </style>
         </head>
         <body>
+          ${renderLetterhead(printHeaderQuery.data)}
           <h1>Student Grades</h1>
           <div class="details">
-            <div><span>Student Number</span><strong>${selectedStudent.stdnt_cno ?? "—"}</strong></div>
-            <div><span>Course</span><strong>${selectedStudent.program ?? "—"}</strong></div>
-            <div><span>Semester</span><strong>${selectedStudent.semester ?? "—"}</strong></div>
-            <div><span>Student Name</span><strong>${selectedStudent.student_name}</strong></div>
-            <div><span>Year Level</span><strong>${selectedStudent.year_level ?? "—"}</strong></div>
-            <div><span>School Year</span><strong>${formatAcademicYearLabel(selectedStudent.academic_year)}</strong></div>
+            <div><span>Student Number</span><strong>${escapeHtml(selectedStudent.stdnt_cno)}</strong></div>
+            <div><span>Course</span><strong>${escapeHtml(selectedStudent.program)}</strong></div>
+            <div><span>Semester</span><strong>${escapeHtml(selectedStudent.semester)}</strong></div>
+            <div><span>Student Name</span><strong>${escapeHtml(selectedStudent.student_name)}</strong></div>
+            <div><span>Year Level</span><strong>${escapeHtml(selectedStudent.year_level)}</strong></div>
+            <div><span>School Year</span><strong>${escapeHtml(formatAcademicYearLabel(selectedStudent.academic_year))}</strong></div>
           </div>
           <table>
             <thead>

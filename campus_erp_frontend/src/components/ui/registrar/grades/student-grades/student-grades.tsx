@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { frappe } from "@/lib/frappe"
 import { formatAcademicYearLabel } from "@/lib/utils"
+import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -102,6 +103,9 @@ export function StudentGrades({
   const rows = sortRows(gradesQuery.data ?? [])
   const notReadyMessage = gradesQuery.isLoading ? "Loading…" : null
 
+  // Print-only: the school letterhead, not needed for the on-screen table.
+  const printHeaderQuery = usePrintHeader(open)
+
   function handlePrint() {
     if (!student) return
     const printWindow = window.open("", "_blank", "width=1000,height=800")
@@ -132,6 +136,7 @@ export function StudentGrades({
           <title>Grades — ${escapeHtml(student.student_name)}</title>
           <style>
             body { font-family: system-ui, sans-serif; padding: 2rem; color: #111; }
+            ${LETTERHEAD_STYLE}
             h1 { font-size: 1.25rem; margin-bottom: 1rem; }
             .details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 1.5rem; margin-bottom: 1.5rem; }
             .details div { margin-bottom: 0.75rem; }
@@ -143,6 +148,7 @@ export function StudentGrades({
           </style>
         </head>
         <body>
+          ${renderLetterhead(printHeaderQuery.data)}
           <h1>Grades</h1>
           <div class="details">
             <div><span>Student Number</span><strong>${escapeHtml(student.stdnt_cno)}</strong></div>

@@ -669,6 +669,395 @@ def list_grades(
 	return result
 
 
+@frappe.whitelist()
+def get_enrollment_statistics(
+	academic_year: str, academic_term: str | None = None, program: str | None = None
+) -> dict:
+	"""Enrollment headcount broken down by Program x Year Level (and by
+	Gender within each) for one Academic Year, optionally narrowed to one
+	Academic Term and/or Program - backs the Enrollment Reports tab's
+	Enrollment Statistics screen.
+
+	Counts Program Enrollment rows directly, one per (student, program) for
+	the year - not Student.sms_status - since this is a point-in-time
+	enrollment count for the selected year/term, not a "currently active"
+	filter; a student who later withdrew still enrolled in this program for
+	this year.
+
+	`genders` lists whatever Gender values actually appear on the enrolled
+	students, rather than hardcoding Male/Female, so a school with a
+	differently-configured Gender doctype still gets an accurate breakdown -
+	each row then carries one count per listed gender plus "total". A
+	student with no Gender set is grouped under "Not Specified".
+	"""
+	filters: dict = {"academic_year": academic_year}
+	if academic_term:
+		filters["academic_term"] = academic_term
+	if program:
+		filters["program"] = program
+
+	rows = frappe.get_all("Program Enrollment", filters=filters, fields=["student", "program", "year_level"])
+	if not rows:
+		return {"genders": [], "rows": [], "totals": {"total": 0}}
+
+	student_names = list({r.student for r in rows if r.student})
+	gender_map = {
+		s.name: s.gender or "Not Specified"
+		for s in frappe.get_all("Student", filters={"name": ["in", student_names]}, fields=["name", "gender"])
+	} if student_names else {}
+
+	program_names = list({r.program for r in rows if r.program})
+	program_map = {
+		p.name: p.program_name
+		for p in frappe.get_all("Program", filters={"name": ["in", program_names]}, fields=["name", "program_name"])
+	} if program_names else {}
+
+	genders_seen: list[str] = []
+	buckets: dict[tuple, dict] = {}
+	for r in rows:
+		key = (r.program, r.year_level)
+		bucket = buckets.setdefault(key, {"total": 0})
+		gender = gender_map.get(r.student, "Not Specified")
+		if gender not in genders_seen:
+			genders_seen.append(gender)
+		bucket[gender] = bucket.get(gender, 0) + 1
+		bucket["total"] += 1
+	genders_seen.sort(key=lambda g: (g == "Not Specified", g))
+
+	result_rows = [
+		{
+			"program": program_key,
+			"program_name": program_map.get(program_key, program_key),
+			"year_level": year_level,
+			"total": bucket["total"],
+			**{g: bucket.get(g, 0) for g in genders_seen},
+		}
+		for (program_key, year_level), bucket in buckets.items()
+	]
+	result_rows.sort(key=lambda r: (r["program_name"] or "", r["year_level"] if r["year_level"] is not None else -1))
+
+	totals = {"total": sum(r["total"] for r in result_rows)}
+	for g in genders_seen:
+		totals[g] = sum(r.get(g, 0) for r in result_rows)
+
+	return {"genders": genders_seen, "rows": result_rows, "totals": totals}
+
+
+@frappe.whitelist()
+def list_enrollments(
+	academic_year: str,
+	academic_term: str | None = None,
+	program: str | None = None,
+	curriculum: str | None = None,
+) -> list[dict]:
+	"""Per-student roster for the Enrollment Reports tab's Enrollment Listing
+	screen: one row per Program Enrollment for the selected School Year,
+	optionally narrowed to one Academic Term, Program, and/or Curriculum (a
+	Program can have more than one SMS Curriculum on file - e.g. a revised
+	prescribed-subjects version for a later intake - so Curriculum narrows
+	further within a Program rather than duplicating it). Unlike
+	get_enrollment_statistics (aggregated counts) or list_grades (one row per
+	subject, via Course Enrollment), this is the plain "who's enrolled"
+	roster - no subject explosion, no aggregation.
+	"""
+	filters: dict = {"academic_year": academic_year}
+	if academic_term:
+		filters["academic_term"] = academic_term
+	if program:
+		filters["program"] = program
+	if curriculum:
+		filters["curriculum"] = curriculum
+
+	rows = frappe.get_all(
+		"Program Enrollment",
+		filters=filters,
+		fields=[
+			"name", "student", "student_name", "program", "academic_year", "academic_term",
+			"year_level", "curriculum", "student_batch_name", "school_house", "boarding_student",
+			"enrollment_date",
+		],
+		order_by="student_name asc",
+	)
+	if not rows:
+		return []
+
+	# Batch-enrich rather than a frappe.db.get_value per row - same reasoning
+	# as list_grades' own course_map/pe_map/student_map.
+	student_names = list({r.student for r in rows if r.student})
+	student_map = {
+		s.name: s
+		for s in frappe.get_all(
+			"Student", filters={"name": ["in", student_names]},
+			fields=[
+				"name", "gender", "stdnt_cno", "sms_status", "first_name", "middle_name", "last_name",
+				"date_of_birth", "address_line_1", "address_line_2", "city",
+				"elementary", "year_elementary", "junior_high", "year_junior_high",
+				"secondary", "year_secondary", "vocational", "year_vocational", "tertiary", "year_tertiary",
+			],
+		)
+	} if student_names else {}
+
+	guardians_by_student: dict[str, dict[str, str]] = {}
+	if student_names:
+		# order_by is explicit (not left to the doctype's default sort) so a
+		# student with two rows for the same relation - nothing stops a
+		# registrar adding a corrected Father row without deleting the old
+		# one - resolves to the most recently edited one, not whichever the
+		# default sort happens to return first. setdefault on the inner dict
+		# then keeps only that first (newest) row per relation.
+		for g in frappe.get_all(
+			"Student Guardian",
+			filters={"parent": ["in", student_names], "parenttype": "Student"},
+			fields=["parent", "relation", "guardian_name"],
+			order_by="modified desc",
+		):
+			if g.relation in ("Father", "Mother"):
+				guardians_by_student.setdefault(g.parent, {}).setdefault(g.relation, g.guardian_name)
+
+	program_names = list({r.program for r in rows if r.program})
+	program_map = {
+		p.name: p.program_name
+		for p in frappe.get_all("Program", filters={"name": ["in", program_names]}, fields=["name", "program_name"])
+	} if program_names else {}
+
+	result = []
+	for r in rows:
+		student = student_map.get(r.student)
+		prior_school, prior_school_year = _prior_school(student)
+		guardians = guardians_by_student.get(r.student, {})
+		result.append({
+			**r,
+			"program_name": program_map.get(r.program, r.program),
+			"gender": student.gender if student else None,
+			"stdnt_cno": student.stdnt_cno if student else None,
+			"sms_status": student.sms_status if student else None,
+			"first_name": student.first_name if student else None,
+			"middle_name": student.middle_name if student else None,
+			"last_name": student.last_name if student else None,
+			"date_of_birth": student.date_of_birth if student else None,
+			"address": _format_address(student) if student else None,
+			"prior_school": prior_school,
+			"prior_school_year": prior_school_year,
+			"father_name": guardians.get("Father"),
+			"mother_name": guardians.get("Mother"),
+		})
+	return result
+
+
+def _format_address(student) -> str | None:
+	parts = [student.address_line_1, student.address_line_2, student.city]
+	joined = ", ".join(p for p in parts if p)
+	return joined or None
+
+
+def _prior_school(student) -> tuple[str | None, int | None]:
+	"""The student's most recently attended prior school before their
+	current program - the legacy Enrollment Listing report's "School
+	Graduated"/"Year Graduated" columns. Rather than branching on the
+	current program's own level (Junior High/Senior High/College all mean a
+	different "one level down" school), this just picks the most advanced
+	of the five School History (PH Basic Ed) pairs that actually has a
+	value on file - in practice the same result, since a student normally
+	only has the one pair below their own level filled in.
+	"""
+	if not student:
+		return None, None
+	for school_field, year_field in (
+		("tertiary", "year_tertiary"),
+		("vocational", "year_vocational"),
+		("secondary", "year_secondary"),
+		("junior_high", "year_junior_high"),
+		("elementary", "year_elementary"),
+	):
+		school = student.get(school_field)
+		if school:
+			return school, student.get(year_field)
+	return None, None
+
+
+@frappe.whitelist()
+def list_enrollments_with_subjects(
+	academic_year: str, academic_term: str | None = None, program: str | None = None
+) -> list[dict]:
+	"""Same roster as list_enrollments, with each student's currently-enrolled
+	subjects (Course Enrollment rows for that Program Enrollment, excluding
+	Dropped) attached as `subjects` - the Enrollment Reports tab's "with
+	Subjects" variant. Reuses list_enrollments for the roster itself rather
+	than re-querying Program Enrollment, per this file's own compose-don't-
+	duplicate convention (see check_prerequisites/_find_prerequisite for the
+	same shape elsewhere in this file).
+	"""
+	roster = list_enrollments(academic_year, academic_term, program)
+	if not roster:
+		return []
+
+	pe_names = [r["name"] for r in roster]
+	course_rows = frappe.get_all(
+		"Course Enrollment",
+		filters={"program_enrollment": ["in", pe_names], "status": ["!=", "Dropped"]},
+		fields=["program_enrollment", "course", "status"],
+		order_by="course asc",
+	)
+
+	course_names = list({r.course for r in course_rows if r.course})
+	course_map = {
+		c.name: c
+		for c in frappe.get_all(
+			"Course", filters={"name": ["in", course_names]},
+			fields=["name", "course_name", "subject_code", "unit", "is_nstp_or_ms"],
+		)
+	} if course_names else {}
+
+	subjects_by_pe: dict[str, list] = {}
+	for r in course_rows:
+		course = course_map.get(r.course)
+		subjects_by_pe.setdefault(r.program_enrollment, []).append({
+			"course": r.course,
+			"course_name": course.course_name if course else r.course,
+			"subject_code": course.subject_code if course else None,
+			"unit": flt(course.unit) if course else 0.0,
+			"status": r.status,
+			"is_nstp_or_ms": bool(course.is_nstp_or_ms) if course else False,
+		})
+
+	for r in roster:
+		r["subjects"] = subjects_by_pe.get(r["name"], [])
+		# NSTP/MS units are excluded from Total Units, same as they're
+		# excluded from GPA (Course.is_nstp_or_ms) - matches the legacy
+		# Enrollment List report, which shows them in parens and leaves them
+		# out of the printed total.
+		r["total_units"] = sum(s["unit"] for s in r["subjects"] if not s["is_nstp_or_ms"])
+
+	return roster
+
+
+_ENROLLMENT_LEVELS = ("College", "Vocational", "High School")
+
+
+def _program_level(course_code: str | None) -> str:
+	"""Classifies a Program into the legacy system's three enrollment
+	"Level" buckets by its course_code prefix - the same convention the old
+	VB frmEnrollmentSummary/qry_EnrollmentSummary used against CourseCode:
+	'HS'/'HS-(K-12)'/'SHS-(K-12)' = High School, a 'BS' prefix = College,
+	everything else = Vocational. Program.course_code carries the same
+	values forward from the legacy CourseCode field (e.g. "BSCS - 1",
+	"BSTM"), so the same rule applies unchanged.
+	"""
+	code = (course_code or "").strip().upper()
+	if code in ("HS", "HS-(K-12)", "SHS-(K-12)"):
+		return "High School"
+	if code.startswith("BS"):
+		return "College"
+	return "Vocational"
+
+
+@frappe.whitelist()
+def get_enrollment_summary(academic_year: str, level: str, academic_term: str | None = None) -> dict:
+	"""Enrollment Summary (Enrollment Reports tab): headcount per Program x
+	Year Level, split Male/Female/Total, for one enrollment "Level" (College/
+	Vocational/High School) - a like-for-like port of the legacy system's
+	frmEnrollmentSummary + qry_EnrollmentSummary report (recovered from the
+	old SchoolManagementSystem-ESTI VB.NET project and its esti_gloria SQL
+	Server backup). Distinct from get_enrollment_statistics (every Program
+	together, an open-ended set of Gender columns, no Level concept) - this
+	report's whole identity IS the Level split the legacy one had.
+
+	Matches the legacy definition exactly: only Male/Female-gendered
+	students are counted, and Total is Male+Female (not a straight
+	headcount) - a student with no Gender on file is silently excluded from
+	both, same as the legacy report's own two Sex='M'/Sex='F' COUNT queries
+	never picked them up either.
+	"""
+	if level not in _ENROLLMENT_LEVELS:
+		frappe.throw(_("Invalid level: {0}").format(level))
+
+	programs = frappe.get_all("Program", fields=["name", "program_name", "course_code"])
+	matching_programs = [p.name for p in programs if _program_level(p.course_code) == level]
+	if not matching_programs:
+		return {"level": level, "rows": [], "totals": {"male": 0, "female": 0, "total": 0}}
+
+	filters: dict = {"academic_year": academic_year, "program": ["in", matching_programs]}
+	if academic_term:
+		filters["academic_term"] = academic_term
+
+	rows = frappe.get_all("Program Enrollment", filters=filters, fields=["student", "program", "year_level"])
+	if not rows:
+		return {"level": level, "rows": [], "totals": {"male": 0, "female": 0, "total": 0}}
+
+	student_names = list({r.student for r in rows if r.student})
+	gender_map = {
+		s.name: s.gender
+		for s in frappe.get_all("Student", filters={"name": ["in", student_names]}, fields=["name", "gender"])
+	} if student_names else {}
+
+	program_map = {p.name: p.program_name for p in programs}
+
+	buckets: dict[tuple, dict] = {}
+	for r in rows:
+		key = (r.program, r.year_level)
+		bucket = buckets.setdefault(key, {"male": 0, "female": 0})
+		gender = gender_map.get(r.student)
+		if gender == "Male":
+			bucket["male"] += 1
+		elif gender == "Female":
+			bucket["female"] += 1
+
+	result_rows = [
+		{
+			"program": program_key,
+			"program_name": program_map.get(program_key, program_key),
+			"year_level": year_level,
+			"male": bucket["male"],
+			"female": bucket["female"],
+			"total": bucket["male"] + bucket["female"],
+		}
+		for (program_key, year_level), bucket in buckets.items()
+	]
+	result_rows.sort(key=lambda r: (r["program_name"] or "", r["year_level"] if r["year_level"] is not None else -1))
+
+	totals = {
+		"male": sum(r["male"] for r in result_rows),
+		"female": sum(r["female"] for r in result_rows),
+		"total": sum(r["total"] for r in result_rows),
+	}
+	return {"level": level, "rows": result_rows, "totals": totals}
+
+
+# Program.semesters (custom_fields.py) classifies which of the 3 tracks a
+# program follows - mirrors the legacy regCourses.Sem_Type column, which
+# joined a Course/Program to one of exactly 3 rows on the legacy Semester
+# table (1=Basic Education, 2=Regular Semester, 3=Trisemester). Each track's
+# period field on SMS Semester Setup holds the currently active period as
+# text (e.g. "2nd Semester"); the semester number resolved below is that
+# option's 1-based position within its OWN track's list - the same
+# per-SemType-relative numbering the legacy System used (frmSettings.vb's
+# UpdateSemesters: Basic Education only ever resolves to 1 or 2, Regular/Tri
+# resolve to 1, 2, or 3) - so semester=2 means "Summer" for a Basic
+# Education program but "2nd Semester" for a Regular Semester program.
+_SEMESTER_TRACKS = {
+	"1": ("basic_ed_period", ["Regular SchoolYear", "Summer Classes"]),
+	"2": ("regular_semester_period", ["1st Semester", "2nd Semester", "Summer Class"]),
+	"3": ("tri_semester_period", ["1st Semester", "2nd Semester", "Summer Class"]),
+}
+
+
+@frappe.whitelist()
+def get_current_semester(program: str) -> dict:
+	"""Auto-derives the current semester for a program from SMS Semester
+	Setup (Administration > System Setup > Semester) - the single source of
+	truth for "what term is active right now", replacing the legacy School
+	Year Setup screen. Used by Pre-Enrollment to default the Semester field
+	the moment a student's program is known, the same point the legacy
+	system's showSemester() populated its own (read-only) Semester label.
+	"""
+	track = frappe.db.get_value("Program", program, "semesters") or "1"
+	period_field, options = _SEMESTER_TRACKS.get(track, _SEMESTER_TRACKS["1"])
+	setup = frappe.get_cached_doc("SMS Semester Setup")
+	period = setup.get(period_field)
+	semester = options.index(period) + 1 if period in options else 1
+	return {"track": track, "period": period, "semester": semester}
+
+
 def _pre_enrollment_response(doc) -> dict:
 	"""Read shape shared by get_or_create_pre_enrollment/save_pre_enrollment/
 	get_pre_enrollment. student_name/subject_name/subject_code are computed
