@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query"
 
 import { frappe } from "@/lib/frappe"
 import { formatAcademicYearLabel } from "@/lib/utils"
-import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -106,10 +106,12 @@ export function StudentGrades({
   // Print-only: the school letterhead, not needed for the on-screen table.
   const printHeaderQuery = usePrintHeader(open)
 
-  function handlePrint() {
+  async function handlePrint() {
     if (!student) return
     const printWindow = window.open("", "_blank", "width=1000,height=800")
     if (!printWindow) return
+
+    const header = await ensurePrintHeader(printHeaderQuery)
 
     const rowsHtml = rows
       .map(
@@ -148,7 +150,7 @@ export function StudentGrades({
           </style>
         </head>
         <body>
-          ${renderLetterhead(printHeaderQuery.data)}
+          ${renderLetterhead(header)}
           <h1>Grades</h1>
           <div class="details">
             <div><span>Student Number</span><strong>${escapeHtml(student.stdnt_cno)}</strong></div>
@@ -175,6 +177,7 @@ export function StudentGrades({
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

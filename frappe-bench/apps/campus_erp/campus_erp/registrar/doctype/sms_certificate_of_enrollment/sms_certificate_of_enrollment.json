@@ -8,11 +8,15 @@
  "engine": "InnoDB",
  "field_order": [
   "student",
+  "program",
+  "year_level",
   "school_year",
   "semester",
   "school_term",
   "date_issued",
-  "purpose"
+  "purpose",
+  "registrar_name",
+  "remarks"
  ],
  "fields": [
   {
@@ -22,6 +26,19 @@
    "label": "Student",
    "options": "Student",
    "reqd": 1
+  },
+  {
+   "description": "Snapshotted at issuance, so a later program change doesn't alter an already-issued certificate's own record",
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Program",
+   "options": "Program",
+   "reqd": 1
+  },
+  {
+   "fieldname": "year_level",
+   "fieldtype": "Int",
+   "label": "Year Level"
   },
   {
    "fieldname": "school_year",
@@ -47,6 +64,16 @@
    "fieldname": "purpose",
    "fieldtype": "Data",
    "label": "Purpose"
+  },
+  {
+   "fieldname": "registrar_name",
+   "fieldtype": "Data",
+   "label": "Registrar"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "icon": "fa fa-file",
@@ -70,6 +97,18 @@
    "read": 1,
    "report": 1,
    "role": "SMS Registrar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SMS Administrator",
    "share": 1,
    "write": 1
   },

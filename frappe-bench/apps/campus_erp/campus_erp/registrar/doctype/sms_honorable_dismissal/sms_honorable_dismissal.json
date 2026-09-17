@@ -9,13 +9,17 @@
  "field_order": [
   "naming_series",
   "student",
+  "program",
   "tc_no",
   "semester",
+  "school_year",
   "release_no",
   "or_no",
   "date_issued",
   "effective_on",
-  "date_graduated"
+  "date_graduated",
+  "registrar_name",
+  "remarks"
  ],
  "fields": [
   {
@@ -38,18 +42,36 @@
    "in_list_view": 1
   },
   {
+   "description": "Snapshotted at issuance, so a later program change doesn't alter an already-issued dismissal's own record",
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Program",
+   "options": "Program",
+   "reqd": 1,
+   "read_only": 0,
+   "in_list_view": 0
+  },
+  {
    "fieldname": "tc_no",
    "fieldtype": "Data",
    "label": "TC No",
-   "reqd": 0,
+   "reqd": 1,
    "read_only": 0,
    "in_list_view": 0
   },
   {
    "fieldname": "semester",
    "fieldtype": "Select",
-   "label": "Semester",
+   "label": "Last Semester Attended",
    "options": "First\nSecond\nThird",
+   "reqd": 0,
+   "read_only": 0,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "school_year",
+   "fieldtype": "Data",
+   "label": "Last School Year Attended",
    "reqd": 0,
    "read_only": 0,
    "in_list_view": 0
@@ -81,8 +103,8 @@
   {
    "fieldname": "effective_on",
    "fieldtype": "Date",
-   "label": "Effective On",
-   "reqd": 0,
+   "label": "H.D. Effective On",
+   "reqd": 1,
    "read_only": 0,
    "in_list_view": 0
   },
@@ -90,6 +112,23 @@
    "fieldname": "date_graduated",
    "fieldtype": "Date",
    "label": "Date Graduated",
+   "description": "Set only when this dismissal is issued because the student graduated, rather than transferred out",
+   "reqd": 0,
+   "read_only": 0,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "registrar_name",
+   "fieldtype": "Data",
+   "label": "Registrar",
+   "reqd": 0,
+   "read_only": 0,
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
    "reqd": 0,
    "read_only": 0,
    "in_list_view": 0
@@ -116,6 +155,21 @@
    "read": 1,
    "report": 1,
    "role": "SMS Registrar",
+   "share": 1,
+   "write": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SMS Administrator",
    "share": 1,
    "write": 1,
    "submit": 1,

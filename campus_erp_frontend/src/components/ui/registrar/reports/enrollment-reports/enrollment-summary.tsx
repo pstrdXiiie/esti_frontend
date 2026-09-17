@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { frappe } from "@/lib/frappe"
 import { formatAcademicYearLabel } from "@/lib/utils"
-import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -155,7 +155,7 @@ export function EnrollmentSummary({ open, onOpenChange }: EnrollmentSummaryProps
   // Print-only: the school letterhead, not needed for the on-screen table.
   const printHeaderQuery = usePrintHeader(open)
 
-  function handlePrint() {
+  async function handlePrint() {
     if (!totals) return
 
     const printWindow = window.open("", "_blank", "width=900,height=1000")
@@ -163,6 +163,8 @@ export function EnrollmentSummary({ open, onOpenChange }: EnrollmentSummaryProps
       toast.error("Could not open the print window. Check your browser's popup blocker.")
       return
     }
+
+    const header = await ensurePrintHeader(printHeaderQuery)
 
     const bodyRows = rows
       .map(
@@ -196,7 +198,7 @@ export function EnrollmentSummary({ open, onOpenChange }: EnrollmentSummaryProps
           </style>
         </head>
         <body>
-          ${renderLetterhead(printHeaderQuery.data)}
+          ${renderLetterhead(header)}
           <h1>Enrollment Summary</h1>
           <h2>${escapeHtml(LEVEL_PRINT_LABEL[level])}</h2>
           <div class="meta">${escapeHtml(yearLabel)} — ${escapeHtml(termLabel)}</div>
@@ -226,6 +228,7 @@ export function EnrollmentSummary({ open, onOpenChange }: EnrollmentSummaryProps
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { frappe, getErrorMessage } from "@/lib/frappe"
 import { transcriptSpec } from "@/lib/forms/registrar"
-import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -262,7 +262,7 @@ export function OfficialTranscriptOfRecords({
     },
   })
 
-  function openPrintWindow(saved: TranscriptRecord, { studentNo, studentName, course, education, fields }: PrintSnapshot) {
+  async function openPrintWindow(saved: TranscriptRecord, { studentNo, studentName, course, education, fields }: PrintSnapshot) {
     const printWindow = printWindowRef.current
     printWindowRef.current = null
     if (!printWindow) {
@@ -272,6 +272,8 @@ export function OfficialTranscriptOfRecords({
       toast.error(`${transcriptSpec.title} created, but the print window could not be opened. Check your browser's popup blocker.`)
       return
     }
+
+    const header = await ensurePrintHeader(printHeaderQuery)
 
     printWindow.document.write(`
       <!doctype html>
@@ -296,7 +298,7 @@ export function OfficialTranscriptOfRecords({
           </style>
         </head>
         <body>
-          ${renderLetterhead(printHeaderQuery.data)}
+          ${renderLetterhead(header)}
           <h1>Request for Official Transcript of Records</h1>
           <div class="tor-no">TOR No.: ${escapeHtml(saved.name)}</div>
 
@@ -309,17 +311,17 @@ export function OfficialTranscriptOfRecords({
           <h2>Educational Data</h2>
           <div class="grid2">
             <div class="field"><span>Elementary School</span><strong>${escapeHtml(education?.elementary)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_elementary)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_elementary || null)}</strong></div>
             <div class="field"><span>Junior High School</span><strong>${escapeHtml(education?.junior_high)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_junior_high)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_junior_high || null)}</strong></div>
             <div class="field"><span>Senior High School</span><strong>${escapeHtml(education?.secondary)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_secondary)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_secondary || null)}</strong></div>
             <div class="field"><span>NCAE No.</span><strong>${escapeHtml(education?.ncae_no)}</strong></div>
             <div class="field"></div>
             <div class="field"><span>Vocational School</span><strong>${escapeHtml(education?.vocational)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_vocational)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_vocational || null)}</strong></div>
             <div class="field"><span>Tertiary</span><strong>${escapeHtml(education?.tertiary)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_tertiary)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_tertiary || null)}</strong></div>
           </div>
 
           <h2>Graduation</h2>
@@ -358,6 +360,7 @@ export function OfficialTranscriptOfRecords({
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

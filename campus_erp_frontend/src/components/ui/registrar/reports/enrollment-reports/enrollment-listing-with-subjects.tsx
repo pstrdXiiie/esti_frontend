@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { frappe } from "@/lib/frappe"
 import { formatAcademicYearLabel } from "@/lib/utils"
-import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -113,7 +113,11 @@ function legacyName(row: EnrollmentRow): string {
   const first = row.first_name?.trim()
   if (!last && !first) return row.student_name
   const middle = row.middle_name?.trim()
-  const middleInitial = middle && middle !== "-" ? ` ${middle.charAt(0).toUpperCase()}.` : ""
+  // Some records carry a placeholder like "-" for "no middle name" instead
+  // of leaving the field blank — matches the backend's own
+  // campus_erp.registrar.student_number.sanitize_student_name rule (no
+  // alphanumeric characters at all, not just a bare "-").
+  const middleInitial = middle && /[a-zA-Z0-9]/.test(middle) ? ` ${middle.charAt(0).toUpperCase()}.` : ""
   return [last, first].filter(Boolean).join(", ") + middleInitial
 }
 
@@ -218,13 +222,14 @@ export function EnrollmentListingWithSubjects({ open, onOpenChange }: Enrollment
   const yearName = academicYearsQuery.data?.find((ay) => ay.name === academicYear)?.academic_year_name
   const yearLabel = yearName ? formatAcademicYearLabel(yearName) : academicYear
 
-  function handlePrint() {
+  async function handlePrint() {
     const printWindow = window.open("", "_blank", "width=1100,height=1000")
     if (!printWindow) {
       toast.error("Could not open the print window. Check your browser's popup blocker.")
       return
     }
 
+    const header = await ensurePrintHeader(printHeaderQuery)
     const termNameByValue = new Map((academicTermsQuery.data ?? []).map((t) => [t.name, t.term_name]))
 
     const groups = groupForPrint(rows)
@@ -307,7 +312,7 @@ export function EnrollmentListingWithSubjects({ open, onOpenChange }: Enrollment
           </style>
         </head>
         <body>
-          ${renderLetterhead(printHeaderQuery.data)}
+          ${renderLetterhead(header)}
           <h1>Enrollment List</h1>
           ${pages}
         </body>
@@ -315,6 +320,7 @@ export function EnrollmentListingWithSubjects({ open, onOpenChange }: Enrollment
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

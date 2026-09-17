@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 0,
  "autoname": "naming_series:",
- "creation": "2026-08-15 12:00:00.000000",
+ "creation": "2026-09-17 09:00:00.000000",
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
@@ -10,22 +10,23 @@
   "naming_series",
   "student",
   "program",
-  "semester",
-  "school_year",
-  "is_graduate",
-  "date_graduated",
+  "credential_type",
+  "so_no",
   "date_issued",
-  "gmc_no",
-  "checked_by",
+  "date_conferred",
+  "honors",
+  "registrar_name",
+  "vp_academic_affairs_name",
+  "president_name",
   "remarks"
  ],
  "fields": [
   {
-   "default": "GMC-.YY.-.#####",
+   "default": "DIP-.YY.-.#####",
    "fieldname": "naming_series",
    "fieldtype": "Select",
    "label": "Series",
-   "options": "GMC-.YY.-.#####",
+   "options": "DIP-.YY.-.#####",
    "reqd": 1
   },
   {
@@ -37,7 +38,7 @@
    "reqd": 1
   },
   {
-   "description": "Snapshotted at issuance, so a later program change doesn't alter an already-issued certificate's own record",
+   "description": "Snapshotted at issuance, so a later program change doesn't alter an already-issued diploma's own record",
    "fieldname": "program",
    "fieldtype": "Link",
    "label": "Program",
@@ -45,25 +46,18 @@
    "reqd": 1
   },
   {
-   "fieldname": "semester",
+   "description": "Snapshotted at issuance from Program.is_diploma_course",
+   "fieldname": "credential_type",
    "fieldtype": "Select",
-   "label": "Last Semester Attended",
-   "options": "First\nSecond\nThird"
+   "label": "Credential Type",
+   "options": "Diploma\nCertificate",
+   "reqd": 1
   },
   {
-   "fieldname": "school_year",
+   "fieldname": "so_no",
    "fieldtype": "Data",
-   "label": "Last School Year Attended"
-  },
-  {
-   "fieldname": "is_graduate",
-   "fieldtype": "Check",
-   "label": "Graduated"
-  },
-  {
-   "fieldname": "date_graduated",
-   "fieldtype": "Date",
-   "label": "Date Graduated"
+   "label": "S.O. No.",
+   "reqd": 1
   },
   {
    "fieldname": "date_issued",
@@ -71,15 +65,31 @@
    "label": "Date Issued"
   },
   {
-   "fieldname": "gmc_no",
-   "fieldtype": "Data",
-   "label": "GMC No",
-   "read_only": 1
+   "description": "The ceremonial conferral date printed on the certificate itself",
+   "fieldname": "date_conferred",
+   "fieldtype": "Date",
+   "label": "Date Conferred",
+   "reqd": 1
   },
   {
-   "fieldname": "checked_by",
+   "fieldname": "honors",
    "fieldtype": "Data",
-   "label": "Checked By"
+   "label": "Honors/Distinction"
+  },
+  {
+   "fieldname": "registrar_name",
+   "fieldtype": "Data",
+   "label": "Registrar"
+  },
+  {
+   "fieldname": "vp_academic_affairs_name",
+   "fieldtype": "Data",
+   "label": "VP - Academic Affairs"
+  },
+  {
+   "fieldname": "president_name",
+   "fieldtype": "Data",
+   "label": "President"
   },
   {
    "fieldname": "remarks",
@@ -87,21 +97,19 @@
    "label": "Remarks"
   }
  ],
- "icon": "fa fa-file",
+ "icon": "fa fa-graduation-cap",
  "index_web_pages_for_search": 1,
  "istable": 0,
- "is_submittable": 1,
+ "is_submittable": 0,
  "links": [],
- "modified": "2026-08-15 12:00:00.000000",
+ "modified": "2026-09-17 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "Registrar",
- "name": "SMS COGMC",
+ "name": "SMS Diploma",
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "delete": 0,
    "email": 1,
@@ -111,12 +119,9 @@
    "report": 1,
    "role": "SMS Registrar",
    "share": 1,
-   "submit": 1,
    "write": 1
   },
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -126,7 +131,6 @@
    "report": 1,
    "role": "SMS Administrator",
    "share": 1,
-   "submit": 1,
    "write": 1
   },
   {

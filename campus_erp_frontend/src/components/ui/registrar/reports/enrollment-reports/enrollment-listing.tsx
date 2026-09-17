@@ -6,7 +6,7 @@ import { toast } from "sonner"
 
 import { frappe } from "@/lib/frappe"
 import { formatAcademicYearLabel } from "@/lib/utils"
-import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -105,7 +105,11 @@ function legacyName(row: EnrollmentRow): string {
   const first = row.first_name?.trim()
   if (!last && !first) return row.student_name
   const middle = row.middle_name?.trim()
-  const middleInitial = middle && middle !== "-" ? ` ${middle.charAt(0).toUpperCase()}.` : ""
+  // Some records carry a placeholder like "-" for "no middle name" instead
+  // of leaving the field blank — matches the backend's own
+  // campus_erp.registrar.student_number.sanitize_student_name rule (no
+  // alphanumeric characters at all, not just a bare "-").
+  const middleInitial = middle && /[a-zA-Z0-9]/.test(middle) ? ` ${middle.charAt(0).toUpperCase()}.` : ""
   return [last, first].filter(Boolean).join(", ") + middleInitial
 }
 
@@ -262,12 +266,14 @@ export function EnrollmentListing({ open, onOpenChange }: EnrollmentListingProps
     ? curriculumsQuery.data?.find((c) => c.name === curriculum)?.curriculum_code ?? curriculum
     : "All Curricula"
 
-  function handlePrint() {
+  async function handlePrint() {
     const printWindow = window.open("", "_blank", "width=1100,height=1000")
     if (!printWindow) {
       toast.error("Could not open the print window. Check your browser's popup blocker.")
       return
     }
+
+    const header = await ensurePrintHeader(printHeaderQuery)
 
     const bodyRows = groupForPrint(rows)
       .map(
@@ -326,7 +332,7 @@ export function EnrollmentListing({ open, onOpenChange }: EnrollmentListingProps
           </style>
         </head>
         <body>
-          ${renderLetterhead(printHeaderQuery.data)}
+          ${renderLetterhead(header)}
           <h1>Enrollment Listing</h1>
           <div class="meta">${escapeHtml(yearLabel)} — ${escapeHtml(programLabel)} — ${escapeHtml(curriculumLabelText)} — ${rows.length} student${rows.length === 1 ? "" : "s"}</div>
           <table>
@@ -351,6 +357,7 @@ export function EnrollmentListing({ open, onOpenChange }: EnrollmentListingProps
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

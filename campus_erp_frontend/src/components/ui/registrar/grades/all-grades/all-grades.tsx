@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { frappe, getErrorMessage } from "@/lib/frappe"
-import { LETTERHEAD_STYLE, renderLetterhead, usePrintHeader } from "@/lib/print-header"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -385,10 +385,12 @@ export default function AllGrades() {
     onError: (error) => toast.error(`Could not save grades: ${getErrorMessage(error)}`),
   })
 
-  function handlePrintStudent() {
+  async function handlePrintStudent() {
     if (!selectedStudent) return
     const printWindow = window.open("", "_blank", "width=1000,height=800")
     if (!printWindow) return
+
+    const header = await ensurePrintHeader(printHeaderQuery)
 
     const rowsHtml = studentGrades
       .map(
@@ -424,7 +426,7 @@ export default function AllGrades() {
           </style>
         </head>
         <body>
-          ${renderLetterhead(printHeaderQuery.data)}
+          ${renderLetterhead(header)}
           <h1>Student Grades</h1>
           <div class="details">
             <div><span>Student Number</span><strong>${escapeHtml(selectedStudent.stdnt_cno)}</strong></div>
@@ -452,6 +454,7 @@ export default function AllGrades() {
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

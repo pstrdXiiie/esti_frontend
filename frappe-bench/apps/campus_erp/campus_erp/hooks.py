@@ -157,6 +157,7 @@ after_migrate = [
 doc_events = {
 	"Student": {
 		"before_insert": "campus_erp.registrar.student_number.set_student_number",
+		"validate": "campus_erp.registrar.student_number.sanitize_student_name",
 	},
 }
 
