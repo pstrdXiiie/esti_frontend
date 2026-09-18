@@ -95,11 +95,7 @@ export function PurchaseRequisitionApprovalPage() {
     queryFn: () => frappe.list<{ name: string }>("Branch", { fields: ["name"], limit_page_length: 100 }),
   })
 
-  useEffect(() => {
-    if (!editingName && !form.company && companiesQuery.data?.length) {
-      setForm((f) => ({ ...f, company: companiesQuery.data[0].name }))
-    }
-  }, [companiesQuery.data, editingName, form.company])
+  const selectedCompany = form.company || companiesQuery.data?.[0]?.name || ""
 
   const listQuery = useQuery({
     queryKey: REQUISITION_LIST_QUERY_KEY,
@@ -171,7 +167,7 @@ export function PurchaseRequisitionApprovalPage() {
         transaction_date: form.transaction_date,
         schedule_date: form.schedule_date || undefined,
         material_request_type: "Purchase",
-        company: form.company,
+        company: selectedCompany,
         requested_by: form.requested_by || undefined,
         branch: form.branch || undefined,
         pr_purpose: form.pr_purpose || undefined,
@@ -213,7 +209,7 @@ export function PurchaseRequisitionApprovalPage() {
   }
 
   const canSave =
-    !!form.transaction_date && !!form.company && items.length > 0 && !saveMutation.isPending
+    !!form.transaction_date && !!selectedCompany && items.length > 0 && !saveMutation.isPending
 
   const reviewQuery = useQuery({
     queryKey: ["Material Request", reviewingName, "detail"],
@@ -348,7 +344,7 @@ export function PurchaseRequisitionApprovalPage() {
             </div>
             <div className="grid gap-1.5">
               <label className="text-xs text-muted-foreground">Company</label>
-              <Select value={form.company} onValueChange={(v) => setForm((f) => ({ ...f, company: v ?? "" }))}>
+              <Select value={selectedCompany} onValueChange={(v) => setForm((f) => ({ ...f, company: v ?? "" }))}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select company…" />
                 </SelectTrigger>
