@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { frappe, getErrorMessage } from "@/lib/frappe"
 import { transcriptSpec } from "@/lib/forms/registrar"
+import { LETTERHEAD_STYLE, ensurePrintHeader, renderLetterhead, usePrintHeader, waitForImagesToLoad } from "@/lib/print-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -154,6 +155,9 @@ export function OfficialTranscriptOfRecords({
 }) {
   const queryClient = useQueryClient()
 
+  // Print-only: the school letterhead, not needed for the form itself.
+  const printHeaderQuery = usePrintHeader(open)
+
   const [student, setStudent] = useState<StudentOption | null>(null)
   const [fields, setFields] = useState(BLANK_FIELDS)
   // Seeds from `initialStudent` exactly once per closed->open transition
@@ -258,7 +262,7 @@ export function OfficialTranscriptOfRecords({
     },
   })
 
-  function openPrintWindow(saved: TranscriptRecord, { studentNo, studentName, course, education, fields }: PrintSnapshot) {
+  async function openPrintWindow(saved: TranscriptRecord, { studentNo, studentName, course, education, fields }: PrintSnapshot) {
     const printWindow = printWindowRef.current
     printWindowRef.current = null
     if (!printWindow) {
@@ -269,6 +273,8 @@ export function OfficialTranscriptOfRecords({
       return
     }
 
+    const header = await ensurePrintHeader(printHeaderQuery)
+
     printWindow.document.write(`
       <!doctype html>
       <html>
@@ -276,6 +282,7 @@ export function OfficialTranscriptOfRecords({
           <title>Official Transcript of Records — ${escapeHtml(studentName)}</title>
           <style>
             body { font-family: system-ui, sans-serif; padding: 2rem; color: #111; }
+            ${LETTERHEAD_STYLE}
             h1 { font-size: 1.25rem; margin-bottom: 0.25rem; text-align: center; }
             h2 { font-size: 0.95rem; margin: 1.5rem 0 0.5rem; border-bottom: 1px solid #999; padding-bottom: 0.25rem; }
             .tor-no { text-align: center; color: #555; font-size: 0.85rem; margin-bottom: 1.5rem; }
@@ -291,6 +298,7 @@ export function OfficialTranscriptOfRecords({
           </style>
         </head>
         <body>
+          ${renderLetterhead(header)}
           <h1>Request for Official Transcript of Records</h1>
           <div class="tor-no">TOR No.: ${escapeHtml(saved.name)}</div>
 
@@ -303,17 +311,17 @@ export function OfficialTranscriptOfRecords({
           <h2>Educational Data</h2>
           <div class="grid2">
             <div class="field"><span>Elementary School</span><strong>${escapeHtml(education?.elementary)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_elementary)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_elementary || null)}</strong></div>
             <div class="field"><span>Junior High School</span><strong>${escapeHtml(education?.junior_high)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_junior_high)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_junior_high || null)}</strong></div>
             <div class="field"><span>Senior High School</span><strong>${escapeHtml(education?.secondary)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_secondary)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_secondary || null)}</strong></div>
             <div class="field"><span>NCAE No.</span><strong>${escapeHtml(education?.ncae_no)}</strong></div>
             <div class="field"></div>
             <div class="field"><span>Vocational School</span><strong>${escapeHtml(education?.vocational)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_vocational)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_vocational || null)}</strong></div>
             <div class="field"><span>Tertiary</span><strong>${escapeHtml(education?.tertiary)}</strong></div>
-            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_tertiary)}</strong></div>
+            <div class="field"><span>Year Graduated</span><strong>${escapeHtml(education?.year_tertiary || null)}</strong></div>
           </div>
 
           <h2>Graduation</h2>
@@ -352,6 +360,7 @@ export function OfficialTranscriptOfRecords({
     `)
     printWindow.document.close()
     printWindow.focus()
+    await waitForImagesToLoad(printWindow.document)
     printWindow.print()
   }
 

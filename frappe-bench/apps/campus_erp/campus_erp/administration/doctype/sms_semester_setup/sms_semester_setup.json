@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "creation": "2026-09-16 09:30:00.000000",
+ "doctype": "DocType",
+ "document_type": "Other",
+ "engine": "InnoDB",
+ "field_order": [
+  "school_year_from",
+  "column_break_year",
+  "school_year_to",
+  "basic_education_section",
+  "basic_ed_start_date",
+  "column_break_1",
+  "basic_ed_end_date",
+  "basic_ed_period",
+  "regular_semester_section",
+  "regular_semester_start_date",
+  "column_break_2",
+  "regular_semester_end_date",
+  "regular_semester_period",
+  "tri_semester_section",
+  "tri_semester_start_date",
+  "column_break_3",
+  "tri_semester_end_date",
+  "tri_semester_period",
+  "other_section",
+  "last_student_no",
+  "column_break_4",
+  "permit_no"
+ ],
+ "fields": [
+  {
+   "fieldname": "school_year_from",
+   "fieldtype": "Int",
+   "label": "School Year From",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_year",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "school_year_to",
+   "fieldtype": "Int",
+   "label": "School Year To",
+   "reqd": 1
+  },
+  {
+   "fieldname": "basic_education_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Education"
+  },
+  {
+   "fieldname": "basic_ed_start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "basic_ed_end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "default": "Regular SchoolYear",
+   "fieldname": "basic_ed_period",
+   "fieldtype": "Select",
+   "label": "Current Period",
+   "options": "Regular SchoolYear\nSummer Classes"
+  },
+  {
+   "fieldname": "regular_semester_section",
+   "fieldtype": "Section Break",
+   "label": "Regular Semester"
+  },
+  {
+   "fieldname": "regular_semester_start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "regular_semester_end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "default": "1st Semester",
+   "fieldname": "regular_semester_period",
+   "fieldtype": "Select",
+   "label": "Current Period",
+   "options": "1st Semester\n2nd Semester\nSummer Class"
+  },
+  {
+   "fieldname": "tri_semester_section",
+   "fieldtype": "Section Break",
+   "label": "Tri Semester"
+  },
+  {
+   "fieldname": "tri_semester_start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tri_semester_end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "default": "1st Semester",
+   "fieldname": "tri_semester_period",
+   "fieldtype": "Select",
+   "label": "Current Period",
+   "options": "1st Semester\n2nd Semester\nSummer Class"
+  },
+  {
+   "fieldname": "other_section",
+   "fieldtype": "Section Break",
+   "label": "Other"
+  },
+  {
+   "fieldname": "last_student_no",
+   "fieldtype": "Data",
+   "label": "Last Student No."
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "permit_no",
+   "fieldtype": "Data",
+   "label": "Permit No."
+  }
+ ],
+ "icon": "fa fa-calendar",
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-16 09:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Administration",
+ "name": "SMS Semester Setup",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

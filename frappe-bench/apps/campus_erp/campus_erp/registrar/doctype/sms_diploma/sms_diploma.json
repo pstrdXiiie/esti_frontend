@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-09-17 09:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "student",
+  "program",
+  "credential_type",
+  "so_no",
+  "date_issued",
+  "date_conferred",
+  "honors",
+  "registrar_name",
+  "vp_academic_affairs_name",
+  "president_name",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "default": "DIP-.YY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "DIP-.YY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Student",
+   "options": "Student",
+   "reqd": 1
+  },
+  {
+   "description": "Snapshotted at issuance, so a later program change doesn't alter an already-issued diploma's own record",
+   "fieldname": "program",
+   "fieldtype": "Link",
+   "label": "Program",
+   "options": "Program",
+   "reqd": 1
+  },
+  {
+   "description": "Snapshotted at issuance from Program.is_diploma_course",
+   "fieldname": "credential_type",
+   "fieldtype": "Select",
+   "label": "Credential Type",
+   "options": "Diploma\nCertificate",
+   "reqd": 1
+  },
+  {
+   "fieldname": "so_no",
+   "fieldtype": "Data",
+   "label": "S.O. No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_issued",
+   "fieldtype": "Date",
+   "label": "Date Issued"
+  },
+  {
+   "description": "The ceremonial conferral date printed on the certificate itself",
+   "fieldname": "date_conferred",
+   "fieldtype": "Date",
+   "label": "Date Conferred",
+   "reqd": 1
+  },
+  {
+   "fieldname": "honors",
+   "fieldtype": "Data",
+   "label": "Honors/Distinction"
+  },
+  {
+   "fieldname": "registrar_name",
+   "fieldtype": "Data",
+   "label": "Registrar"
+  },
+  {
+   "fieldname": "vp_academic_affairs_name",
+   "fieldtype": "Data",
+   "label": "VP - Academic Affairs"
+  },
+  {
+   "fieldname": "president_name",
+   "fieldtype": "Data",
+   "label": "President"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "icon": "fa fa-graduation-cap",
+ "index_web_pages_for_search": 1,
+ "istable": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-09-17 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Registrar",
+ "name": "SMS Diploma",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SMS Registrar",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "SMS Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 0,
+   "role": "SMS Student",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

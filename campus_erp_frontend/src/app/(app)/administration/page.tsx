@@ -8,6 +8,11 @@ import {
 
 const SCREENS = [
   {
+    href: "/administration/system-setup",
+    title: "System Setup",
+    description: "Core setup data referenced across modules, such as academic semesters.",
+  },
+  {
     href: "/administration/codes",
     title: "Codes",
     description: "Lookup codes for nationality, religion, fees, scholarships, and library categories.",

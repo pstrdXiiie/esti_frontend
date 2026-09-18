@@ -131,6 +131,7 @@ const SETTINGS_SECTIONS: NavSection[] = [
     icon: ShieldCheck,
     children: [
       { label: "Approvals", href: "/administration/approvals" },
+      { label: "System Setup", href: "/administration/system-setup" },
       { label: "Sessions", href: "/administration/sessions" },
       { label: "Codes", href: "/administration/codes" },
       { label: "Brackets", href: "/administration/brackets" },
