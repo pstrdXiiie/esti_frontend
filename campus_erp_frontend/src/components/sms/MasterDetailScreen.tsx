@@ -200,18 +200,30 @@ export function MasterDetailScreen({
 
   const form = useForm<Record<string, unknown>>({ defaultValues: {} })
 
-  const relatedFieldNames = new Set(spec.relatedRecord?.fields.map((f) => f.fieldname) ?? [])
+  const relatedFieldNames = new Set([
+    ...(spec.relatedRecord?.fields.map((f) => f.fieldname) ?? []),
+    ...(spec.relatedRecord?.additionalCreateFields?.map((f) => f.fieldname) ?? []),
+  ])
 
   const dialogFields = useMemo(() => {
     if (!spec.relatedRecord) return spec.fields
     const { relatedRecord } = spec
+    const hasRelated = !!relatedRecordName
+    // With allowCreate, there's nothing to edit yet but the fields should
+    // still accept input (the user is filling them in to create the
+    // related record on save) -- only the plain default (no allowCreate)
+    // forces them readOnly when nothing exists.
+    const editable = hasRelated || !!relatedRecord.allowCreate
     return [
       ...spec.fields,
       ...relatedRecord.fields.map((f) => ({
         ...f,
         section: relatedRecord.section,
-        readOnly: f.readOnly || !relatedRecordName,
+        readOnly: f.readOnly || !editable,
       })),
+      ...(!hasRelated && relatedRecord.allowCreate
+        ? (relatedRecord.additionalCreateFields ?? []).map((f) => ({ ...f, section: relatedRecord.section }))
+        : []),
     ]
   }, [spec, relatedRecordName])
 
@@ -231,6 +243,21 @@ export function MasterDetailScreen({
       if (spec.relatedRecord && relatedRecordName) {
         await frappe.updateDoc(spec.relatedRecord.doctype, relatedRecordName, relatedValues)
         queryClient.invalidateQueries({ queryKey: [spec.relatedRecord.doctype, "list"] })
+      } else if (
+        spec.relatedRecord?.allowCreate &&
+        // Only create once the user actually picked something -- leaving
+        // every related field blank stays a no-op, same as before this
+        // capability existed, instead of inserting an empty record.
+        Object.values(relatedValues).some((v) => v !== undefined && v !== null && v !== "")
+      ) {
+        const parentName = editing?.name ?? (result as { name?: string } | undefined)?.name
+        if (parentName) {
+          await frappe.createDoc(spec.relatedRecord.doctype, {
+            [spec.relatedRecord.linkField]: parentName,
+            ...relatedValues,
+          })
+          queryClient.invalidateQueries({ queryKey: [spec.relatedRecord.doctype, "list"] })
+        }
       }
 
       return result

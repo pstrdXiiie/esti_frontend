@@ -86,10 +86,18 @@ export interface FormSpec {
    * Student field). MasterDetailScreen looks up the newest matching record
    * for the row being edited (by `linkField`), shows these fields in their
    * own labeled section, and patches that record on save — separately from
-   * the base doctype update. It never creates a new related record here
-   * (those typically need other required fields this dialog doesn't
-   * collect), so the fields are disabled with an explanatory note when no
-   * related record exists yet.
+   * the base doctype update.
+   *
+   * By default it never creates a new related record (those typically need
+   * other required fields this dialog doesn't collect), so the fields are
+   * disabled with an explanatory note when no related record exists yet. Set
+   * `allowCreate` to opt into the other behavior: `fields` become editable
+   * even with nothing to edit yet, `additionalCreateFields` collects
+   * whatever else creating one requires (e.g. Program Enrollment's required
+   * `academic_year`, which isn't otherwise surfaced), and saving creates the
+   * related record instead of patching one — but only once a real value
+   * lands in `fields` (e.g. a Program is actually picked), so leaving
+   * everything blank stays a no-op rather than creating an empty record.
    */
   relatedRecord?: {
     doctype: string
@@ -102,6 +110,10 @@ export interface FormSpec {
     /** Shown under the section heading when no related record exists yet. */
     missingRecordHint: string
     fields: FieldSpec[]
+    /** Opt-in: create a new related record (instead of just disabling `fields`) when none exists yet. Default false leaves every other relatedRecord consumer unchanged. */
+    allowCreate?: boolean
+    /** Only used when `allowCreate` is true and there's nothing to edit yet -- fields the create call needs beyond `fields` and `linkField` (e.g. Program Enrollment's required `academic_year`). Never shown once a related record exists. */
+    additionalCreateFields?: FieldSpec[]
   }
   /**
    * Small navigation shortcuts to a related record's own screen in another

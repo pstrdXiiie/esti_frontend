@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Upload } from "lucide-react"
 
@@ -86,24 +86,19 @@ export default function PurchaseOrderReceivingPage() {
     enabled: !!selected,
   })
 
-  useMemo(() => {
-    if (selected && sourceItems.length > 0) {
-      setItems(
-        sourceItems.map((i) => ({
-          item_code: i.item_code,
-          item_description: i.item_description,
-          qty_ordered: i.qty,
-          qty_previously_received: i.qty_received,
-          qty_received: 0,
-          rate: i.rate,
-        }))
-      )
-    }
-  }, [selected, sourceItems])
+  const sourceRows: ReceivingItemRow[] = sourceItems.map((i) => ({
+    item_code: i.item_code,
+    item_description: i.item_description,
+    qty_ordered: i.qty,
+    qty_previously_received: i.qty_received,
+    qty_received: 0,
+    rate: i.rate,
+  }))
+  const receivingItems = items.length > 0 ? items : sourceRows
 
   const isFullyReceived =
-    items.length > 0 && items.every((r) => r.qty_previously_received + r.qty_received >= r.qty_ordered)
-  const hasAnyReceiving = items.some((r) => r.qty_received > 0)
+    receivingItems.length > 0 && receivingItems.every((r) => r.qty_previously_received + r.qty_received >= r.qty_ordered)
+  const hasAnyReceiving = receivingItems.some((r) => r.qty_received > 0)
   const isPosted = selected?.status === "Posted"
   const isCancelled = selected?.status === "Cancelled"
 
@@ -121,7 +116,7 @@ export default function PurchaseOrderReceivingPage() {
       purchase_order: selected.name,
       delivery_date: deliveryDate,
       si_number: siNumber,
-      items: items.map((r) => ({
+      items: receivingItems.map((r) => ({
         item_code: r.item_code,
         qty_received: r.qty_received,
       })),
@@ -289,14 +284,14 @@ export default function PurchaseOrderReceivingPage() {
         </div>
       </FinancePropertySection>
 
-      <PurchaseOrderReceivingItemGrid rows={items} onChange={setItems} disabled={!canAct} />
+      <PurchaseOrderReceivingItemGrid rows={receivingItems} onChange={setItems} disabled={!canAct} />
 
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           className={financePrimaryButton}
           onClick={handleConfirm}
-          disabled={!canAct || items.length === 0}
+          disabled={!canAct || receivingItems.length === 0}
         >
           Confirmed P.O.
         </button>

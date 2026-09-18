@@ -63,10 +63,19 @@ export const studentSpec: FormSpec = {
     linkField: "student",
     orderBy: "enrollment_date",
     section: "Course Enrollment",
-    missingRecordHint: "No Program Enrollment on file yet — enroll this student in a course first before shifting it here.",
+    missingRecordHint: "No Program Enrollment on file yet — pick a course and school year below to enroll this student, then Save.",
+    allowCreate: true,
     fields: [
       { fieldname: "program", label: "Course", fieldtype: "Link", options: "Program", dropdown: true },
       { fieldname: "year_level", label: "Year Level", fieldtype: "Int" },
+    ],
+    // Program Enrollment also requires academic_year to be created at all;
+    // it isn't part of `fields` above because there's nothing to show once
+    // an enrollment already exists (shifting a student to a new school year
+    // is a new enrollment record, not an edit of this one) -- only needed
+    // the one time a brand new enrollment is being created here.
+    additionalCreateFields: [
+      { fieldname: "academic_year", label: "School Year", fieldtype: "Link", options: "Academic Year", dropdown: true, required: true },
     ],
   },
 }

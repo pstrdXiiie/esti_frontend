@@ -17,7 +17,7 @@ const accountsChildSpec: ChildTableSpec = {
 export default function PettyCashEntryPage() {
   return (
     <VoucherEntryForm
-      title="Petty Cash Account Entry"
+      title="Petty Cash Receipt"
       description="Record petty cash account movements."
       docLabel="PCV#"
       namingSeriesOptions={["PCV-.YYYY.-", "PCV-MANUAL-"]}

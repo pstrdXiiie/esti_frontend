@@ -63,9 +63,11 @@ type Mode = "view" | "edit" | "add"
 export function FinanceMaintenanceScreen({
   spec,
   extra,
+  bordered = true,
 }: {
   spec: EntrySpec
   extra?: (doc: Record<string, unknown> | null, mode: Mode) => ReactNode
+  bordered?: boolean
 }) {
   const queryClient = useQueryClient()
 
@@ -194,7 +196,7 @@ export function FinanceMaintenanceScreen({
   const locked = mode === "view"
 
   return (
-    <div className="rounded-2xl border border-border h-full p-6 flex flex-col gap-5 overflow-y-auto">
+    <div className={`rounded-2xl h-full p-6 flex flex-col gap-5 overflow-y-auto ${bordered ? "border border-border" : ""}`}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
         <Button type="button" onClick={handleAdd} disabled={mode === "add"}>
           <PlusIcon /> Add

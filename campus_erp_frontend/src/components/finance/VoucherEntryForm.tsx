@@ -125,7 +125,7 @@ export function VoucherEntryForm({
 
       <FinancePropertySection title="Details">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground sm:col-span-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground sm:col-span-2">
             <input
               type="checkbox"
               checked={manualMode}
@@ -135,7 +135,7 @@ export function VoucherEntryForm({
           </label>
 
           {manualMode ? (
-            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+            <label className="grid gap-1 text-sm font-medium text-muted-foreground">
               {docLabel}
               <input
                 className={`rounded border border-border ${financeRowInput}`}
@@ -146,7 +146,7 @@ export function VoucherEntryForm({
               />
             </label>
           ) : (
-            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+            <label className="grid gap-1 text-sm font-medium text-muted-foreground">
               {docLabel}
               <select
                 className={`rounded border border-border ${financeRowSelect}`}
@@ -162,7 +162,7 @@ export function VoucherEntryForm({
             </label>
           )}
 
-          <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+          <label className="grid gap-1 text-sm font-medium text-muted-foreground">
             Date
             <input
               className={`rounded border border-border bg-muted text-muted-foreground ${financeRowInput}`}
@@ -172,7 +172,7 @@ export function VoucherEntryForm({
             />
           </label>
 
-          <label className="grid gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">
+          <label className="grid gap-1 text-sm font-medium text-muted-foreground sm:col-span-2">
             Notes
             <textarea
               className={`min-h-[72px] rounded border border-border ${financeRowInput}`}

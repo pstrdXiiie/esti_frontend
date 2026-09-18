@@ -311,19 +311,10 @@ export function PurchaseRequisitionApprovalPage() {
   return (
     <>
       <div className="grid gap-6 print:hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold">
-            Purchase Requisition &amp; Approval 
-          </h1>
-          <Button type="button" onClick={handleNewRequisition}>
-            + New Requisition
-          </Button>
-        </div>
-
         <div ref={formRef} className="grid gap-4 scroll-mt-4">
-          <h2 className="text-sm font-semibold text-muted-foreground">
-            {editingName ? `Editing ${editingName}` : "New Requisition"}
-          </h2>
+          <h1 className="text-2xl font-semibold">
+            {editingName ? `Edit Purchase Requisition — ${editingName}` : "New Purchase Requisition"}
+          </h1>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
             <div className="grid gap-1.5">
@@ -417,11 +408,23 @@ export function PurchaseRequisitionApprovalPage() {
             <div className="text-right text-sm font-medium">Total: ₱{formatCurrency(computedTotal)}</div>
           </div>
 
-          <div>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={resetForm} disabled={saveMutation.isPending}>
+              Cancel
+            </Button>
             <Button type="button" disabled={!canSave} onClick={() => saveMutation.mutate()}>
               {saveMutation.isPending ? "Saving…" : editingName ? "Update Requisition" : "Save Requisition"}
             </Button>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold">
+            Purchase Requisition Approval
+          </h2>
+          {/* <Button type="button" onClick={handleNewRequisition}>
+            + New Requisition
+          </Button> */}
         </div>
 
         <div className="relative max-w-sm">

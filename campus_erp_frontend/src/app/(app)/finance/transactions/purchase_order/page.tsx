@@ -1,8 +1,7 @@
 "use client"
 
-import { EntryListScreen } from "@/components/sms/EntryListScreen"
-import { purchaseOrderSpec } from "@/lib/forms/purchasing"
+import { PurchaseOrder } from "@/components/ui/finance/transactions/purchase-order/purchase-order"
 
 export default function PurchaseOrdersListPage() {
-  return <EntryListScreen spec={purchaseOrderSpec} basePath="/finance/purchase-orders" inlineAdd cardStyle />
+  return <PurchaseOrder />
 }

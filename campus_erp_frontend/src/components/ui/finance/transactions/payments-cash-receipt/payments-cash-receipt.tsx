@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { RecordViewDialog, type RecordViewField } from "@/components/sms/RecordViewDialog"
 
 import { frappe, getErrorMessage } from "@/lib/frappe"
 import { formatAcademicYearLabel } from "@/lib/utils"
@@ -63,7 +64,7 @@ type ModeOfPayment = "Cash" | "Cheque"
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid gap-1.5">
-      <label className="text-xs text-muted-foreground">{label}</label>
+      <label className="text-sm text-muted-foreground">{label}</label>
       {children}
     </div>
   )
@@ -103,7 +104,16 @@ export default function PaymentsCashReceipt({
   const [modeOfPayment, setModeOfPayment] = useState<ModeOfPayment>("Cash")
   const [referenceNo, setReferenceNo] = useState("")
   const [lastOrNumber, setLastOrNumber] = useState<string | null>(null)
+  const [viewingPayment, setViewingPayment] = useState<PaymentEntryRow | null>(null)
 
+  const recentPaymentViewFields: RecordViewField<PaymentEntryRow>[] = [
+  { label: "OR #", render: (r) => r.name },
+  { label: "Date", render: (r) => r.posting_date },
+  { label: "Student", render: (r) => r.party_name },
+  { label: "Mode of Payment", render: (r) => r.mode_of_payment ?? "—" },
+  { label: "Reference No.", render: (r) => r.reference_no ?? "—" },
+  { label: "Amount", render: (r) => `₱${formatCurrency(r.paid_amount)}` },
+]
   const [appliedInitialStudent, setAppliedInitialStudent] = useState(false)
   const initialStudentQuery = useQuery({
     queryKey: ["Student", "get", initialStudentName],
@@ -252,9 +262,9 @@ export default function PaymentsCashReceipt({
   const canSave = canPay && !!amount && Number(amount) > 0 && !paymentMutation.isPending
 
   return (
-    <div className="rounded-2xl border border-border h-full p-6 flex flex-col gap-5 overflow-y-auto">
+    <div className="grid gap-5 h-full overflow-y-auto">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4">
-        <h2 className="text-lg font-semibold">Cash Receipt Transaction</h2>
+        <h1 className="text-2xl font-semibold text-foreground">Payments / Cash Receipt Entry</h1>
         <Button type="button" variant="outline" onClick={resetForNewPayment}>
           New Payment
         </Button>
@@ -447,14 +457,22 @@ export default function PaymentsCashReceipt({
       </div>
 
       <FinancePropertySection title={student ? `Recent Payments — ${studentDisplayName(student)}` : "Recent Payments"}>
-        <FinanceRecordTable
+       <FinanceRecordTable
           columns={recentPaymentColumns}
           rows={recentPayments}
           rowKey={(r) => r.name}
+          onSelectRow={setViewingPayment}
           isLoading={recentPaymentsQuery.isLoading}
           emptyMessage="No payments recorded yet."
         />
       </FinancePropertySection>
+      <RecordViewDialog
+        open={!!viewingPayment}
+        onOpenChange={(open) => !open && setViewingPayment(null)}
+        row={viewingPayment}
+        fields={recentPaymentViewFields}
+        title="Payment Details"
+      />
     </div>
   )
 }

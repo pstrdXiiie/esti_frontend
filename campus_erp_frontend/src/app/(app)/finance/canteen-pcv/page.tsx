@@ -40,7 +40,8 @@ interface CompanyRow {
 export default function CanteenPcvListPage() {
   return (
     <div className="grid gap-6">
-      <FinanceMaintenanceScreen spec={canteenPcvSpec} />
+      <h1 className="text-2xl font-semibold text-foreground">Petty Cash Canteen Entry</h1>
+      <FinanceMaintenanceScreen spec={canteenPcvSpec} bordered={false} />
       <ReplenishmentPanel />
     </div>
   )

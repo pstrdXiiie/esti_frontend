@@ -9,6 +9,13 @@ import { frappe, getErrorMessage } from "@/lib/frappe"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -48,11 +55,19 @@ function formatCurrency(value: number | null | undefined): string {
  * incidental payment) above a searchable, paginated table of recent entries.
  * No border/card shell around the form itself, per the request this screen
  * was rebuilt for — it sits flush in whatever tab/page hosts it.
+ *
+ * Row click also opens the same record in a Dialog (Registrar/Student's
+ * MasterDetailScreen pattern) as an additional entry point alongside the
+ * inline form/dropdown-Edit path, which is left unchanged. Both share the
+ * same `form`/`editingName` state and the same saveMutation, so editing via
+ * either one stays in sync. Action buttons inside each row (the ⋮ dropdown's
+ * Edit/Print) already stop propagation, so they don't also open the dialog.
  */
 export function SundryAccount() {
   const queryClient = useQueryClient()
   const [editingName, setEditingName] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [printing, setPrinting] = useState<SundryAccountRow | null>(null)
@@ -109,6 +124,7 @@ export function SundryAccount() {
       toast.success(editingName ? "Sundry account updated" : "Sundry account saved")
       queryClient.invalidateQueries({ queryKey: ["SMS Sundry Account", "list"] })
       resetForm()
+      setDialogOpen(false)
     },
     onError: (error) => toast.error(`Could not save sundry account: ${getErrorMessage(error)}`),
   })
@@ -122,6 +138,14 @@ export function SundryAccount() {
       date: row.date ?? "",
       amount: row.amount != null ? String(row.amount) : "",
     })
+  }
+
+  // New row-click entry point: same as loadForEdit, plus opens the dialog.
+  // Kept separate from loadForEdit so the dropdown's Edit item (which calls
+  // loadForEdit directly) keeps its existing inline-only behavior.
+  function openRowInDialog(row: SundryAccountRow) {
+    loadForEdit(row)
+    setDialogOpen(true)
   }
 
   // Same window.print()-on-visible-DOM convention used everywhere else in
@@ -192,7 +216,7 @@ export function SundryAccount() {
     <>
       <div className="grid gap-6 print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-2xl font-semibold">
             Sundry Accounts
           </h2>
         </div>
@@ -208,7 +232,7 @@ export function SundryAccount() {
           <Field label="Payment For">
             <Input
               value={form.payment}
-              onChange={(e) => setForm((f) => ({ ...f, payment: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, payment: e.target.value}))}
             />
           </Field>
           <Field label="OR Number">
@@ -259,6 +283,7 @@ export function SundryAccount() {
           columns={columns}
           rows={pageRows}
           rowKey={(r) => r.name}
+          onSelectRow={openRowInDialog}
           isLoading={listQuery.isLoading}
           emptyMessage={search.trim() ? "No matching records." : "No sundry account records yet."}
         />
@@ -289,6 +314,62 @@ export function SundryAccount() {
           </div>
         </div>
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{editingName ? `Edit Sundry Account — ${editingName}` : "Sundry Account"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Payee">
+              <Input
+                value={form.payee}
+                onChange={(e) => setForm((f) => ({ ...f, payee: e.target.value }))}
+                placeholder="Search or type a payee name…"
+              />
+            </Field>
+            <Field label="Payment For">
+              <Input
+                value={form.payment}
+                onChange={(e) => setForm((f) => ({ ...f, payment: e.target.value }))}
+              />
+            </Field>
+            <Field label="OR Number">
+              <Input
+                value={form.or_num}
+                onChange={(e) => setForm((f) => ({ ...f, or_num: e.target.value }))}
+              />
+            </Field>
+            <Field label="Transaction Date">
+              <Input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+              />
+            </Field>
+            <Field label="Amount">
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.amount}
+                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              />
+            </Field>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              disabled={!canSave || saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
+              {saveMutation.isPending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {printing && (
         <div className="hidden print:block p-8 text-sm">

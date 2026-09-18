@@ -1,6 +1,6 @@
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import PurchaseOrdersListPage from "@/app/(app)/finance/purchase-orders/page"
+import PurchaseOrdersListPage from "@/app/(app)/finance/transactions/purchase_order/page"
 import CanteenPcvListPage from "@/app/(app)/finance/canteen-pcv/page"
 import PaymentsCashReceipt from "@/components/ui/finance/transactions/payments-cash-receipt/payments-cash-receipt"
 import ChequeVoucherEntryPage from "@/app/(app)/finance/transactions/cheque_voucher_entry/page"
@@ -20,7 +20,7 @@ export const finance_transactions = ({
   initialStudentName?: string
 } = {}) => {
   return (
-    <Tabs defaultValue={initialSubTab ?? "student-accounts"} orientation="vertical" className="flex-row items-stretch bg-card p-4 rounded-lg shadow-md w-full h-[85vh] border border-border">
+    <Tabs defaultValue={initialSubTab ?? "student-accounts"} orientation="vertical" className="flex-row items-stretch bg-card p-4 rounded-lg shadow-md w-full h-[85vh]">
       {/* TabsList's own base styling (ui/tabs.tsx) hard-codes h-fit for
           vertical orientation via group-data-vertical/tabs:h-fit — no
           className passed here can reliably win that cascade (same-specificity

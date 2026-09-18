@@ -52,6 +52,12 @@ import { FinanceEntryScreen } from "@/components/finance/FinanceEntryScreen"
  * Curriculum Offered screen, and adds a leading icon to the Add button.
  * No behavior changes — same data flow, same dialog/inline form logic.
  *
+ * Table rows are click-anywhere (Registrar/Student's MasterDetailScreen
+ * pattern) — the whole <TableRow> opens the edit dialog, with
+ * cursor-pointer/hover cues; the Edit/Delete buttons in the Actions column
+ * call e.stopPropagation() so they act independently rather than double-
+ * firing the row's own click-to-edit.
+ *
  * If spec has a "root_type" field, a Root Type filter dropdown is rendered
  * above the table (driven by that field's options string), and a Print
  * button becomes available that renders ALL records (ignoring the active
@@ -78,7 +84,7 @@ export function FinanceEntryListScreen({
   allowCreate?: boolean
   /** Seeds the search box, e.g. from a `?q=` link in from another module's quickLinks. */
   initialSearch?: string
-  /** Purely visual opt-in: rounded-2xl card shell + bordered toolbar matching Curriculum Offered. Default false leaves existing consumers unchanged. */
+  /** Purely visual opt-in: rounded-2xl card shell + bordered toolbar matchingCurriculum Offered. Default false leaves existing consumers unchanged. */
   cardStyle?: boolean
 }) {
   const queryClient = useQueryClient()
@@ -316,29 +322,26 @@ export function FinanceEntryListScreen({
             </TableHeader>
             <TableBody>
               {filteredData.map((row) => (
-                <TableRow key={String(row.name)}>
-                  {columns.map((c, i) => (
+                <TableRow
+                  key={String(row.name)}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => openRow(String(row.name))}
+                >
+                  {columns.map((c) => (
                     <TableCell key={c.fieldname}>
-                      {i === 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => openRow(String(row.name))}
-                          className="font-medium hover:underline"
-                        >
-                          {formatCell(c, row) || String(row.name)}
-                        </button>
-                      ) : (
-                        formatCell(c, row)
-                      )}
+                      {formatCell(c, row) || String(row.name)}
                     </TableCell>
                   ))}
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
                         aria-label={`Edit ${spec.title}`}
-                        onClick={() => openRow(String(row.name))}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openRow(String(row.name))
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -346,7 +349,10 @@ export function FinanceEntryListScreen({
                         variant="ghost"
                         size="icon"
                         aria-label={`Delete ${spec.title}`}
-                        onClick={() => setDeleteTarget(row)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteTarget(row)
+                        }}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -372,7 +378,7 @@ export function FinanceEntryListScreen({
           <h1 className="mb-4 text-xl font-semibold">{spec.title}</h1>
           {printGroups.map((group) => (
             <div key={group.type} className="mb-6 break-inside-avoid">
-              <h2 className="mb-1 border-b border-black pb-1 text-sm font-bold uppercase">
+              <h2 className="mb-1 border-b border-black pb-1 text-sm font-bolduppercase">
                 {group.type}
               </h2>
               <table className="w-full text-sm">

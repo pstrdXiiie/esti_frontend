@@ -99,15 +99,15 @@ export const purchaseOrderSpec: EntrySpec = {
       inListView: true,
     },
   ],
-  // Item lines (Purchase Order Item) are intentionally not exposed here.
-  // Purchase Orders in this app are created via
-  // campus_erp.api.finance_purchasing.create_purchase_orders_from_requisition
-  // (the Requisition detail page's "Create Purchase Order(s)" button), which
-  // uses ERPNext's own Material-Request-to-PO mapper to fill items,
-  // company, currency, and conversion_rate. Hand-editing lines — or
-  // creating a brand new PO from scratch on this reduced-field screen,
-  // which is missing those other native-required fields — is out of scope
-  // for this pass.
+  // Item lines (Purchase Order Item) are intentionally not exposed on this
+  // reduced-field Maintenance spec, which still only supports generating a
+  // PO via campus_erp.api.finance_purchasing.
+  // create_purchase_orders_from_requisition (the Requisition detail page's
+  // "Create Purchase Order(s)" button). Direct, from-scratch PO creation
+  // with an item grid lives on its own bespoke screen instead — see
+  // src/components/ui/finance/transactions/purchase-order/ — which calls
+  // the sibling create_purchase_order / update_purchase_order RPCs that
+  // resolve company/currency/conversion_rate server-side.
 }
 
 export const canteenPcvSpec: EntrySpec = {
